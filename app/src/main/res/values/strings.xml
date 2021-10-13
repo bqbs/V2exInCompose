@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">V2exInCompose</string>
+    <string name="topics">Topics</string>
+    <string name="profile">Profile</string>
 </resources>

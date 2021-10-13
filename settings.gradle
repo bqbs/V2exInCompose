@@ -8,3 +8,5 @@ dependencyResolutionManagement {
 }
 rootProject.name = "V2exInCompose"
 include ':app'
+include ':network'
+include ':model'

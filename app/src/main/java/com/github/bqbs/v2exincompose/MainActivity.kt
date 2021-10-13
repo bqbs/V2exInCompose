@@ -3,166 +3,138 @@ package com.github.bqbs.v2exincompose
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.ComposeCompilerApi
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.github.bqbs.v2exincompose.ui.theme.V2exInComposeTheme
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+
             V2exInComposeTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(color = MaterialTheme.colors.background) {
+                    NavGraph()
+                }
+            }
+        }
+    }
+}
 
+object MainDestinations {
+    const val TOPICS = "route_to_topics"
+    const val PROFILE = "route_to_profile"
+}
 
-                    LazyColumn(content = {
-                        items(20) {
-                            Topics()
-                            Divider()
+sealed class Screen(val route: String, @StringRes val resourceId: Int) {
+    object Topics : Screen(MainDestinations.TOPICS, R.string.topics)
+    object Profile : Screen(MainDestinations.PROFILE, R.string.profile)
+}
+
+@Composable
+fun NavGraph(
+    startDestination: String = MainDestinations.TOPICS
+) {
+    val navController = rememberNavController()
+
+    val actions = remember(navController) { MainActions(navController) }
+
+    val items = listOf(
+        Screen.Topics,
+        Screen.Profile
+    )
+    Scaffold(
+        bottomBar = {
+            BottomNavigation {
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentDestination = navBackStackEntry?.destination
+                items.forEach { screen ->
+                    BottomNavigationItem(
+                        icon = { Icon(Icons.Filled.Favorite, contentDescription = null) },
+                        label = { Text(stringResource(screen.resourceId)) },
+                        selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                        onClick = {
+                            navController.navigate(screen.route) {
+                                // Pop up to the start destination of the graph to
+                                // avoid building up a large stack of destinations
+                                // on the back stack as users select items
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                // Avoid multiple copies of the same destination when
+                                // reselecting the same item
+                                launchSingleTop = true
+                                // Restore state when reselecting a previously selected item
+                                restoreState = true
+                            }
                         }
-                    })
+                    )
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String) {
-    Text(text = "Hello $name!")
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    V2exInComposeTheme {
-        LazyColumn(content = {
-            items(20) {
-                Topics()
-                Divider()
-            }
-        })
-    }
-}
-
-@Composable
-fun Topics() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(
-            modifier = Modifier
-                .wrapContentWidth()
-                .align(alignment = Alignment.Top),
-            horizontalAlignment = Alignment.CenterHorizontally
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = startDestination,
+            Modifier.padding(innerPadding)
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_launcher_background),
-                contentDescription = "",
-                modifier = Modifier
-                    .padding(8.dp)
-                    .size(36.dp)
-                    .align(alignment = Alignment.Start)
-                    .clip(
-                        RoundedCornerShape(18.dp)
-                    ),
-                alignment = Alignment.TopCenter
-            )
-        }
-
-        Column(
-            modifier = Modifier.weight(1f, true),
-            horizontalAlignment = Alignment.Start
-
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-
-                Surface(
-                    color = Color.LightGray,
-                    modifier = Modifier
-                        .wrapContentHeight()
-                        .clip(RoundedCornerShape(6.dp))
-                ) {
-                    Text(text = "主题", color = Color.Gray)
-                }
-                Spacer(modifier = Modifier.size(10.dp))
-                Dot(size = 1.dp, color = Color.Black)
-                Spacer(modifier = Modifier.size(10.dp))
-                Text(text = "作者")
+            composable(MainDestinations.TOPICS) {
+                TopicsPage(actions)
             }
-            Text(text = "content\ncontent\ncontent", maxLines = 3)
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = "** min ago")
-                Dot(size = 1.dp, color = Color.Black)
-                Text(text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(color = Color.DarkGray)) {
-                        append("最后回复")
-                    }
-                    withStyle(style = SpanStyle(color = Color.Black)) {
-                        append("一窝鸡尼斯")
-                    }
-                })
-            }
-        }
-        Column(
-            modifier = Modifier
-                .wrapContentSize(),
-            horizontalAlignment = Alignment.End
-        ) {
-
-            Surface(
-                color = Color.LightGray,
-                modifier = Modifier
-                    .padding(8.dp)
-                    .wrapContentSize()
-                    .clip(RoundedCornerShape(8.dp))
-
-            ) {
-                Text(
-                    modifier = Modifier
-                        .wrapContentSize()
-                        .padding(start = 8.dp, end = 8.dp),
-                    text = "12",
-                    color = Color.White,
-                    textAlign = TextAlign.Center
-                )
+            composable(MainDestinations.PROFILE) {
+                ProfilePage(actions, userName = "fdppzrl", viewModel = viewModel())
             }
         }
     }
 }
 
-@Composable
-fun Dot(size: Dp, color: Color) {
-    Canvas(modifier = Modifier
-        .padding()
-        .size(size), onDraw = {
-        drawCircle(color = color)
-    })
+
+class MainActions(navController: NavHostController) {
+
+    val homePage: () -> Unit = {
+        navigate(navController, MainDestinations.TOPICS)
+    }
+
+    val showProfile: () -> Unit = {
+        navigate(navController, MainDestinations.PROFILE)
+    }
+
+    private fun navigate(navController: NavHostController, route: String) {
+        navController.navigate(route) {
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
+            // Avoid multiple copies of the same destination when
+            // reselecting the same item
+            launchSingleTop = true
+            // Restore state when reselecting a previously selected item
+            restoreState = true
+
+            anim {
+//                enter = R.anim.in_from_right
+//                exit = R.anim.out_to_left
+//                popEnter = R.anim.in_from_right
+//                popExit = R.anim.out_to_left
+            }
+        }
+    }
+
 }
