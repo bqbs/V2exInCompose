@@ -9,7 +9,12 @@ import java.util.concurrent.TimeUnit
 object ServiceCreator {
 
     private var BASE_URL =
-        if (BuildConfig.DEBUG) "http://128.8.38.117:40001/mock/8/v2ex/" else "https://www.v2ex.com/"
+        if (BuildConfig.DEBUG) {
+//            "http://128.8.38.117:40001/mock/8/v2ex/"
+            "https://www.v2ex.com/"
+        } else {
+            "https://www.v2ex.com/"
+        }
     private const val SAVE_USER_LOGIN_KEY = "user/login"
     private const val SAVE_USER_REGISTER_KEY = "user/register"
     private const val SET_COOKIE_KEY = "set-cookie"

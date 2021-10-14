@@ -68,4 +68,6 @@ dependencies {
 
     implementation project(path: ':model')
     implementation project(path: ':network')
+
+    implementation "androidx.compose.runtime:runtime-livedata:$compose_version"
 }

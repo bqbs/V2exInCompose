@@ -100,7 +100,7 @@ fun NavGraph(
                 TopicsPage(actions)
             }
             composable(MainDestinations.PROFILE) {
-                ProfilePage(actions, userName = "fdppzrl", viewModel = viewModel())
+                ProfilePage(actions, userName = "fdppzrl")
             }
         }
     }
@@ -122,17 +122,14 @@ class MainActions(navController: NavHostController) {
             popUpTo(navController.graph.findStartDestination().id) {
                 saveState = true
             }
-            // Avoid multiple copies of the same destination when
-            // reselecting the same item
             launchSingleTop = true
-            // Restore state when reselecting a previously selected item
             restoreState = true
 
             anim {
-//                enter = R.anim.in_from_right
-//                exit = R.anim.out_to_left
-//                popEnter = R.anim.in_from_right
-//                popExit = R.anim.out_to_left
+                enter = R.anim.in_from_right
+                exit = R.anim.out_to_left
+                popEnter = R.anim.in_from_right
+                popExit = R.anim.out_to_left
             }
         }
     }

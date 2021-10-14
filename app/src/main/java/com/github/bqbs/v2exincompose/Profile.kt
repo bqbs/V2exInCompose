@@ -1,7 +1,6 @@
 package com.github.bqbs.v2exincompose
 
 import android.annotation.SuppressLint
-import android.app.Application
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -11,20 +10,18 @@ import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.*
 import coil.compose.ImagePainter
 import coil.compose.rememberImagePainter
 import coil.transform.CircleCropTransformation
 import com.github.bqbs.v2exincompose.model.Member
 import com.github.bqbs.v2exincompose.repository.V2exRepository
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
 
 /**
@@ -40,12 +37,14 @@ fun ProfilePage(
     userName: String? = null,
     viewModel: ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
-    var member: MutableState<Member?> = mutableStateOf<Member?>(null)
+
+    val member by viewModel.member.observeAsState(null)
+
     Scaffold {
         Column {
             Row {
                 Image(
-                    painter = rememberImagePainter(data = member.value?.avatar_normal,
+                    painter = rememberImagePainter(data = member?.avatar_normal,
                         onExecute = ImagePainter.ExecuteCallback { _, _ -> true },
                         builder = {
                             crossfade(true)
@@ -56,10 +55,7 @@ fun ProfilePage(
                 )
             }
             Row {
-                Text("$userName", Modifier.clickable {
-                    viewModel.member.observeForever {
-                        member.value = it
-                    }
+                Text(member?.username ?: "Welcome", Modifier.clickable {
                     viewModel.profileUserName.value = userName
                     viewModel.showProfile()
                 })
@@ -69,11 +65,13 @@ fun ProfilePage(
 }
 
 
-class ProfileViewModel(application: Application) : AndroidViewModel(application) {
+class ProfileViewModel() : ViewModel() {
     private val repository by lazy {
         V2exRepository()
     }
-    val member: MutableLiveData<Member> = MutableLiveData<Member>()
+    var _member = MutableLiveData<Member?>()
+    val member: LiveData<Member?>
+        get() = _member
     var profileId: MutableState<Long?> = mutableStateOf(null)
     var profileUserName: MutableState<String?> = mutableStateOf(null)
     fun showProfile() {
@@ -89,9 +87,8 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                     null
                 }
             }
-            if (m != null) {
-                member.postValue(m)
-            }
+
+            _member.postValue(m)
         }
     }
 }
