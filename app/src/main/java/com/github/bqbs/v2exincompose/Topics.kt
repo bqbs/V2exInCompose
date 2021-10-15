@@ -2,12 +2,10 @@ package com.github.bqbs.v2exincompose
 
 import android.annotation.SuppressLint
 import android.app.Application
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Divider
 import androidx.compose.material.Surface
@@ -19,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
@@ -176,6 +175,7 @@ fun Dot(size: Dp, color: Color) {
     })
 }
 
+@ExperimentalFoundationApi
 @SuppressLint("UnrememberedMutableState")
 @Composable
 fun TopicsPage(
@@ -192,18 +192,29 @@ fun TopicsPage(
             refreshing = false
         }
     }
-    viewModel.getLatest()
 
     SwipeRefreshLayout(isRefreshing = refreshing, onRefresh = {
         refreshing = true
         viewModel.getLatest()
     }) {
-        LazyColumn(content = {
-            items(topicList.value ?: emptyArray()) {
-                Topics(mainActions, topicsItem = it)
-                Divider()
+        if (topicList.value.isNullOrEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState(), enabled = true),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("下拉试试")
             }
-        })
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxHeight(),
+                content = {
+                    items(topicList.value!!) {
+                        Topics(mainActions, topicsItem = it)
+                        Divider()
+                    }
+                })
+        }
     }
 }
 
@@ -226,6 +237,7 @@ class TopicsPageViewModel(application: Application) : AndroidViewModel(applicati
     }
 }
 
+@ExperimentalFoundationApi
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
