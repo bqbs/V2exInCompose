@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.StringRes
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -13,20 +14,26 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.github.bqbs.v2exincompose.MainDestinations.PROFILE
 import com.github.bqbs.v2exincompose.ui.theme.V2exInComposeTheme
 
 class MainActivity : ComponentActivity() {
 
+    @ExperimentalFoundationApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val splashScreen = installSplashScreen()
         setContent {
 
             V2exInComposeTheme {
@@ -40,15 +47,18 @@ class MainActivity : ComponentActivity() {
 }
 
 object MainDestinations {
-    const val TOPICS = "route_to_topics"
-    const val PROFILE = "route_to_profile"
+    const val TOPICS = "/home/route_to_topics"
+    const val PROFILE = "route_to_profile/{userid}"
+    const val HOTS = "/home/route_to_hots"
 }
 
 sealed class Screen(val route: String, @StringRes val resourceId: Int) {
     object Topics : Screen(MainDestinations.TOPICS, R.string.topics)
+    object Hots : Screen(MainDestinations.HOTS, R.string.hots)
     object Profile : Screen(MainDestinations.PROFILE, R.string.profile)
 }
 
+@ExperimentalFoundationApi
 @Composable
 fun NavGraph(
     startDestination: String = MainDestinations.TOPICS
@@ -59,34 +69,25 @@ fun NavGraph(
 
     val items = listOf(
         Screen.Topics,
-        Screen.Profile
+        Screen.Hots
     )
     Scaffold(
         bottomBar = {
-            BottomNavigation {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentDestination = navBackStackEntry?.destination
-                items.forEach { screen ->
-                    BottomNavigationItem(
-                        icon = { Icon(Icons.Filled.Favorite, contentDescription = null) },
-                        label = { Text(stringResource(screen.resourceId)) },
-                        selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
-                        onClick = {
-                            navController.navigate(screen.route) {
-                                // Pop up to the start destination of the graph to
-                                // avoid building up a large stack of destinations
-                                // on the back stack as users select items
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                // Avoid multiple copies of the same destination when
-                                // reselecting the same item
-                                launchSingleTop = true
-                                // Restore state when reselecting a previously selected item
-                                restoreState = true
-                            }
-                        }
-                    )
+            val navBackStackEntry by navController.currentBackStackEntryAsState()
+            val currentDestination = navBackStackEntry?.destination
+
+            if (currentDestination?.route?.startsWith("/home") == true) {
+                BottomNavigation {
+//                    val navBackStackEntry by navController.currentBackStackEntryAsState()
+//                    val currentDestination = navBackStackEntry?.destination
+                    items.forEach { screen ->
+                        BottomNavigationItem(
+                            icon = { Icon(Icons.Filled.Favorite, contentDescription = null) },
+                            label = { Text(stringResource(screen.resourceId)) },
+                            selected = currentDestination?.hierarchy?.any { it.route == screen.route },
+                            onClick = { actions.navigate(navController, screen.route) }
+                        )
+                    }
                 }
             }
         }
@@ -99,8 +100,14 @@ fun NavGraph(
             composable(MainDestinations.TOPICS) {
                 TopicsPage(actions)
             }
-            composable(MainDestinations.PROFILE) {
-                ProfilePage(actions, userName = "fdppzrl")
+            composable(MainDestinations.HOTS) {
+                HotsPage(actions)
+            }
+            composable(
+                MainDestinations.PROFILE,
+                arguments = listOf(navArgument("userid") { type = NavType.LongType })
+            ) {
+                ProfilePage(actions, id = it.arguments?.getLong("userid"))
             }
         }
     }
@@ -113,15 +120,19 @@ class MainActions(navController: NavHostController) {
         navigate(navController, MainDestinations.TOPICS)
     }
 
-    val showProfile: () -> Unit = {
-        navigate(navController, MainDestinations.PROFILE)
+    val showProfile: (userid: Long?) -> Unit = {
+        navigate(navController, "route_to_profile/$it")
     }
 
-    private fun navigate(navController: NavHostController, route: String) {
+    val hotsPage: () -> Unit = {
+        navigate(navController, MainDestinations.HOTS)
+    }
+
+    fun navigate(navController: NavHostController, route: String) {
         navController.navigate(route) {
-            popUpTo(navController.graph.findStartDestination().id) {
-                saveState = true
-            }
+//            popUpTo(navController.graph.findStartDestination().id) {
+//                saveState = true
+//            }
             launchSingleTop = true
             restoreState = true
 
@@ -132,6 +143,7 @@ class MainActions(navController: NavHostController) {
                 popExit = R.anim.out_to_left
             }
         }
+
     }
 
 }

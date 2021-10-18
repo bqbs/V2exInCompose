@@ -70,4 +70,6 @@ dependencies {
     implementation project(path: ':network')
 
     implementation "androidx.compose.runtime:runtime-livedata:$compose_version"
+    implementation 'io.github.shenzhen2017:shimmer:1.0.0'
+    implementation 'androidx.core:core-splashscreen:1.0.0-alpha02'
 }

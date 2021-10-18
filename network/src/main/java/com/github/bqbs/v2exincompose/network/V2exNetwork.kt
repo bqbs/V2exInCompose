@@ -10,7 +10,13 @@ import retrofit2.http.Query
 object V2exNetwork {
 
     // https://www.v2ex.com/api/topics/hot.json
-    fun getHots() {}
+    suspend fun getHots(): Array<TopicsBeanItem>? {
+        return try {
+            return getService().getHots()
+        } catch (e: Exception) {
+            null
+        }
+    }
 
     // https://www.v2ex.com/api/topics/latest.json
     suspend fun getLatest(): Array<TopicsBeanItem>? {
@@ -48,7 +54,7 @@ interface V2exService {
 
     // https://www.v2ex.com/api/topics/hot.json
     @GET("api/topics/hot.json")
-    suspend fun getHots()
+    suspend fun getHots(): Array<TopicsBeanItem>
 
     // https://www.v2ex.com/api/topics/latest.json
     @GET("api/topics/latest.json")

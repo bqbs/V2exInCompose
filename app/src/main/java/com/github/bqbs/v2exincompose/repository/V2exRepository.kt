@@ -14,4 +14,6 @@ class V2exRepository {
 
     suspend fun getLatest(): Array<TopicsBeanItem>? =
         V2exNetwork.getLatest()
+
+    suspend fun getHots() :Array<TopicsBeanItem>? = V2exNetwork.getHots()
 }
